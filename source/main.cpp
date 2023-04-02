@@ -71,7 +71,7 @@ int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
         features[i+1] = accelY / 2048.00f;
         features[i+2] = accelZ / 2048.00f;
         //ei_printf("%.5f\n", features[i]);
-        sleep_ms(6.5);
+        sleep_ms(INTERVAL_MS);
     }
     
     memcpy(out_ptr, features + offset, length * sizeof(float));
