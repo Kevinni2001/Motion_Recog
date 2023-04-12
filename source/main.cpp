@@ -12,7 +12,7 @@
 
 static int addr = 0x1d;
 
-static float features[150];
+static float features[258];
 const uint LED_PIN = 25;
 
 void accel_init(void)
@@ -54,7 +54,7 @@ int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
     int16_t accelX, accelY, accelZ;     // Combined 3 axis data
     uint8_t accelRegAddr = 0x01;        // Start register address
 
-    for (uint8_t i = 0; i < (150/3); i = i + 3) 
+    for (uint8_t i = 0; i < (258/3); i = i + 3) 
     {
         i2c_write_blocking(I2C_PORT, addr, &accelRegAddr, 1, true);     // start from X_MSB
         i2c_read_blocking(I2C_PORT, addr, accel, 6, false);             // read all 6 values
@@ -86,6 +86,8 @@ int main()
     // adc_gpio_init(26);
     // adc_select_input(0);
     
+    sleep_ms(15000);
+
     // I2C
     printf("Set i2c port!");
     i2c_init(I2C_PORT, 400000);
@@ -113,7 +115,7 @@ int main()
         return -1;
     }
 
-    ei_impulse_result_t result = {0};
+    ei_impulse_result_t result = {0};       // check ei_classifier_types.h for more info
 
     // the features are stored into flash, and we don't want to load everything into RAM
     signal_t features_signal;
@@ -131,34 +133,43 @@ int main()
 
         if (res != 0) return res;
 
-        // print the predictions
-        ei_printf("Predictions ");
-        ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-            result.timing.dsp, result.timing.classification, result.timing.anomaly);
-        ei_printf(": \n");
-        ei_printf("[");
-        for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-            ei_printf("%.5f", result.classification[ix].value);
-    #if EI_CLASSIFIER_HAS_ANOMALY == 1
-            ei_printf(", ");
-    #else
-            if (ix != EI_CLASSIFIER_LABEL_COUNT - 1) {
-                ei_printf(", ");
-            }
-    #endif
-        }
-    #if EI_CLASSIFIER_HAS_ANOMALY == 1
-        ei_printf("%.3f", result.anomaly);
-    #endif
-        ei_printf("]\n");
+    //     // print the predictions
+    //     ei_printf("Predictions ");
+    //     ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
+    //         result.timing.dsp, result.timing.classification, result.timing.anomaly);
+    //     ei_printf(": \n");
+    //     ei_printf("[");
+    //     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+    //         ei_printf("%.5f", result.classification[ix].value);
+    // #if EI_CLASSIFIER_HAS_ANOMALY == 1
+    //         ei_printf(", ");
+    // #else
+    //         if (ix != EI_CLASSIFIER_LABEL_COUNT - 1) {
+    //             ei_printf(", ");
+    //         }
+    // #endif
+    //     }
+    // #if EI_CLASSIFIER_HAS_ANOMALY == 1
+    //     ei_printf("%.3f", result.anomaly);
+    // #endif
+    //     ei_printf("]\n");
 
+    
+        const char *currLabel = "";
+        float confLevel = 0;
         // human-readable predictions
         for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
             ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
+            if (result.classification[ix].value > confLevel)
+            {
+                confLevel = result.classification[ix].value;
+                currLabel = result.classification[ix].label;
+            }
         }
     #if EI_CLASSIFIER_HAS_ANOMALY == 1
         ei_printf("    anomaly score: %.3f\n", result.anomaly);
     #endif
+        printf("Curr motion: %s", currLabel);
         gpio_put(LED_PIN, 1);
         sleep_ms(1000);
 
