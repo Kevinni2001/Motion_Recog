@@ -4,6 +4,7 @@
 #include "hardware/gpio.h"
 #include "hardware/adc.h"
 #include "hardware/i2c.h"
+#include "hardware/uart.h"
 
 #define I2C_PORT i2c0
 #define CONVERT_G_TO_MS2    9.80665f
@@ -14,6 +15,9 @@ static int addr = 0x1d;
 
 static float features[258];
 const uint LED_PIN = 25;
+
+// values for data tracking
+int num_shots = 0;
 
 void accel_init(void)
 {
@@ -48,7 +52,7 @@ void set_I2C_Active()
 
 int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
 
-    ei_printf("Gathering data \n");
+    // ei_printf("Gathering data \n");
 
     uint8_t accel[6];                   // Store data from the 6 acceleration registers (2 regs for each direction)
     int16_t accelX, accelY, accelZ;     // Combined 3 axis data
@@ -88,6 +92,11 @@ int main()
     
     sleep_ms(15000);
 
+    // UART
+    uart_init(uart0, 9600);      // freq=9600
+    gpio_set_function(0, GPIO_FUNC_UART);
+    gpio_set_function(1, GPIO_FUNC_UART);
+
     // I2C
     printf("Set i2c port!");
     i2c_init(I2C_PORT, 400000);
@@ -125,11 +134,12 @@ int main()
     while (true) 
     
     {
-        ei_printf("Edge Impulse standalone inferencing (Raspberry Pico 2040)\n");
+        // ei_printf("Edge Impulse standalone inferencing (Raspberry Pico 2040)\n");
         gpio_put(LED_PIN, 0);
         // invoke the impulse
         EI_IMPULSE_ERROR res = run_classifier(&features_signal, &result, false /* debug */);
-        ei_printf("run_classifier returned: %d\n", res);
+        
+        // ei_printf("run_classifier returned: %d\n", res);
 
         if (res != 0) return res;
 
@@ -156,20 +166,29 @@ int main()
 
     
         const char *currLabel = "";
+        int gestureNo = -1;
         float confLevel = 0;
         // human-readable predictions
         for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-            ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
+            // ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
             if (result.classification[ix].value > confLevel)
             {
                 confLevel = result.classification[ix].value;
                 currLabel = result.classification[ix].label;
+                gestureNo = ix;
             }
         }
     #if EI_CLASSIFIER_HAS_ANOMALY == 1
         ei_printf("    anomaly score: %.3f\n", result.anomaly);
     #endif
-        printf("Curr motion: %s", currLabel);
+
+        // final output
+        if (gestureNo == 0)
+        {
+            num_shots++;
+        }
+        printf("Curr motion: %s\n", currLabel);
+        printf("Number of shoots taken: %d\n", num_shots);
         gpio_put(LED_PIN, 1);
         sleep_ms(1000);
 

@@ -18,11 +18,11 @@ add_executable(hello_ml
 
 include(${MODEL_FOLDER}/edge-impulse-sdk/cmake/utils.cmake)
 
-target_link_libraries(hello_ml pico_stdlib hardware_adc hardware_i2c)
+target_link_libraries(hello_ml pico_stdlib hardware_adc hardware_i2c hardware_uart)
 
 # enable usb output, disable uart output
-pico_enable_stdio_usb(hello_ml 1)
-pico_enable_stdio_uart(hello_ml 0)
+# pico_enable_stdio_usb(hello_ml 1)
+# pico_enable_stdio_uart(hello_ml 0)
 
 target_include_directories(hello_ml PRIVATE
     ${MODEL_FOLDER}
