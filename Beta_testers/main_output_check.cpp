@@ -1,5 +1,5 @@
 /*
-This is the beta main file that tests the gesture control function
+This is the main file that checks the raw output of the ML model
 */
 
 #include <stdio.h>
@@ -22,8 +22,6 @@ const uint LED_PIN = 25;
 
 // values for data tracking
 int num_shots = 0;
-int op_mode = 0;        // 0 for idle, 1 for tracking
-int idle_count = 0;     // keep track of number of idles, change mode according to it
 
 void accel_init(void)
 {
@@ -140,77 +138,62 @@ int main()
     while (true) 
     
     {
-        // ei_printf("Edge Impulse standalone inferencing (Raspberry Pico 2040)\n");
+        ei_printf("Edge Impulse standalone inferencing (Raspberry Pico 2040)\n");
         gpio_put(LED_PIN, 0);
         // invoke the impulse
         EI_IMPULSE_ERROR res = run_classifier(&features_signal, &result, false /* debug */);
         
-        // ei_printf("run_classifier returned: %d\n", res);
+        ei_printf("run_classifier returned: %d\n", res);
 
         if (res != 0) return res;
 
-    //     // print the predictions
-    //     ei_printf("Predictions ");
-    //     ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-    //         result.timing.dsp, result.timing.classification, result.timing.anomaly);
-    //     ei_printf(": \n");
-    //     ei_printf("[");
-    //     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-    //         ei_printf("%.5f", result.classification[ix].value);
-    // #if EI_CLASSIFIER_HAS_ANOMALY == 1
-    //         ei_printf(", ");
-    // #else
-    //         if (ix != EI_CLASSIFIER_LABEL_COUNT - 1) {
-    //             ei_printf(", ");
-    //         }
-    // #endif
-    //     }
-    // #if EI_CLASSIFIER_HAS_ANOMALY == 1
-    //     ei_printf("%.3f", result.anomaly);
-    // #endif
-    //     ei_printf("]\n");
+        // print the predictions
+        ei_printf("Predictions ");
+        ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
+            result.timing.dsp, result.timing.classification, result.timing.anomaly);
+        ei_printf(": \n");
+        ei_printf("[");
+        for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+            ei_printf("%.5f", result.classification[ix].value);
+    #if EI_CLASSIFIER_HAS_ANOMALY == 1
+            ei_printf(", ");
+    #else
+            if (ix != EI_CLASSIFIER_LABEL_COUNT - 1) {
+                ei_printf(", ");
+            }
+    #endif
+        }
+    #if EI_CLASSIFIER_HAS_ANOMALY == 1
+        ei_printf("%.3f", result.anomaly);
+    #endif
+        ei_printf("]\n");
+
     
-        const char *currLabel = "";
-        int gestureNo = -1;
-        float confLevel = 0;
+        // const char *currLabel = "";
+        // int gestureNo = -1;
+        // float confLevel = 0;
+
         // human-readable predictions
         for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-            // ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
-            if (result.classification[ix].value > confLevel)
-            {
-                confLevel = result.classification[ix].value;
-                currLabel = result.classification[ix].label;
-                gestureNo = ix;
-            }
+            ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
+            // if (result.classification[ix].value > confLevel)
+            // {
+            //     confLevel = result.classification[ix].value;
+            //     currLabel = result.classification[ix].label;
+            //     gestureNo = ix;
+            // }
         }
     #if EI_CLASSIFIER_HAS_ANOMALY == 1
         ei_printf("    anomaly score: %.3f\n", result.anomaly);
     #endif
 
-        // final output
-        printf("Curr motion: %s\n", currLabel);
-        if (gestureNo == 1 && op_mode != 1)     // if detect CCW, and not active      
-        {
-            op_mode = 1;
-            idle_count = 0;         // need to reset idle count after activated
-            printf("Active Mode!\n");
-        }
-        else if (gestureNo == 2 && op_mode == 1)    // at rest, but at active mode
-        {
-            idle_count++;
-            if (idle_count > 6)    // if idle for more than 6 secs
-            {
-                op_mode = 0;
-                idle_count = 0;
-                printf("Idle Mode!\n");
-            }
-        }
-        if (gestureNo == 0 && op_mode == 1)
-        {
-            idle_count = 0;
-            num_shots++;
-        }
-        printf("Number of shoots taken: %d\n", num_shots);
+        // // final output
+        // if (gestureNo == 0)
+        // {
+        //     num_shots++;
+        // }
+        // printf("Curr motion: %s\n", currLabel);
+        // printf("Number of shoots taken: %d\n", num_shots);
         gpio_put(LED_PIN, 1);
         sleep_ms(1000);
 

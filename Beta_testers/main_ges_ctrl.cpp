@@ -188,14 +188,13 @@ int main()
     #endif
 
         // final output
-        printf("Curr motion: %s\n", currLabel);
-        if (gestureNo == 1 && op_mode != 1)     // if detect CCW, and not active      
+        // TODO
+        if (gestureNo == 1)      
         {
             op_mode = 1;
-            idle_count = 0;         // need to reset idle count after activated
             printf("Active Mode!\n");
         }
-        else if (gestureNo == 2 && op_mode == 1)    // at rest, but at active mode
+        else if (gestureNo == 2)
         {
             idle_count++;
             if (idle_count > 6)    // if idle for more than 6 secs
@@ -207,9 +206,9 @@ int main()
         }
         if (gestureNo == 0 && op_mode == 1)
         {
-            idle_count = 0;
             num_shots++;
         }
+        printf("Curr motion: %s\n", currLabel);
         printf("Number of shoots taken: %d\n", num_shots);
         gpio_put(LED_PIN, 1);
         sleep_ms(1000);
